@@ -1,0 +1,459 @@
+/**
+ * Styles for LeetCoach Chrome extension content script UI.
+ */
+
+/* Panel Container */
+.leetcoach-panel {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    width: 400px;
+    max-height: 600px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+    z-index: 999999;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    color: #333;
+    border: 1px solid #e0e0e0;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.leetcoach-panel.minimized {
+    height: 60px;
+    overflow: hidden;
+}
+
+.leetcoach-panel.minimized .leetcoach-content {
+    display: none;
+}
+
+/* Header */
+.leetcoach-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: grab;
+    user-select: none;
+}
+
+.leetcoach-header:active {
+    cursor: grabbing;
+}
+
+.leetcoach-logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.leetcoach-icon {
+    font-size: 20px;
+}
+
+.leetcoach-title {
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.leetcoach-controls {
+    display: flex;
+    gap: 5px;
+}
+
+.leetcoach-btn-icon {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s ease;
+}
+
+.leetcoach-btn-icon:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+/* Content Area */
+.leetcoach-content {
+    display: flex;
+    flex-direction: column;
+    max-height: 540px;
+}
+
+/* Tabs */
+.leetcoach-tabs {
+    display: flex;
+    background: #f8f9fa;
+    border-bottom: 1px solid #e0e0e0;
+    overflow-x: auto;
+}
+
+.leetcoach-tab {
+    background: none;
+    border: none;
+    padding: 12px 16px;
+    cursor: pointer;
+    font-size: 13px;
+    color: #666;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+    border-bottom: 2px solid transparent;
+}
+
+.leetcoach-tab:hover {
+    background: #e9ecef;
+    color: #333;
+}
+
+.leetcoach-tab.active {
+    color: #667eea;
+    border-bottom-color: #667eea;
+    background: white;
+}
+
+/* Tab Content */
+.leetcoach-tab-content {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.leetcoach-tab-panel {
+    display: none;
+    padding: 20px;
+    min-height: 300px;
+}
+
+.leetcoach-tab-panel.active {
+    display: block;
+}
+
+/* Controls */
+.leetcoach-hint-controls,
+.leetcoach-optimize-controls,
+.leetcoach-complexity-controls,
+.leetcoach-solution-controls,
+.leetcoach-questions-controls {
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #eee;
+}
+
+.leetcoach-btn-primary {
+    background: #667eea;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    margin-right: 10px;
+    margin-bottom: 10px;
+}
+
+.leetcoach-btn-primary:hover {
+    background: #5a6fd8;
+    transform: translateY(-1px);
+}
+
+.leetcoach-btn-primary:active {
+    transform: translateY(0);
+}
+
+.leetcoach-btn-primary:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Form Elements */
+.leetcoach-hint-controls label,
+.leetcoach-questions-controls label {
+    font-weight: 500;
+    margin-right: 10px;
+    color: #555;
+}
+
+.leetcoach-hint-controls select,
+.leetcoach-questions-controls select {
+    padding: 6px 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 13px;
+    margin-right: 10px;
+    margin-bottom: 10px;
+}
+
+.leetcoach-checkbox-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-top: 10px;
+}
+
+.leetcoach-checkbox-group label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.leetcoach-checkbox-group input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
+/* Content Display */
+.leetcoach-content-area {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 15px;
+    min-height: 200px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.leetcoach-placeholder {
+    color: #999;
+    font-style: italic;
+    text-align: center;
+    margin-top: 60px;
+}
+
+.leetcoach-response {
+    line-height: 1.6;
+}
+
+.leetcoach-response h1,
+.leetcoach-response h2,
+.leetcoach-response h3 {
+    color: #333;
+    margin: 20px 0 10px 0;
+}
+
+.leetcoach-response h1 {
+    font-size: 18px;
+}
+
+.leetcoach-response h2 {
+    font-size: 16px;
+}
+
+.leetcoach-response h3 {
+    font-size: 14px;
+}
+
+.leetcoach-response p {
+    margin: 10px 0;
+}
+
+.leetcoach-response ul,
+.leetcoach-response ol {
+    margin: 10px 0 10px 20px;
+}
+
+.leetcoach-response li {
+    margin: 5px 0;
+}
+
+.leetcoach-response code {
+    background: #f1f3f4;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 13px;
+}
+
+.leetcoach-response pre {
+    background: #f8f9fa;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 15px;
+    overflow-x: auto;
+    margin: 15px 0;
+}
+
+.leetcoach-response pre code {
+    background: none;
+    padding: 0;
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+.leetcoach-response strong {
+    font-weight: 600;
+    color: #333;
+}
+
+.leetcoach-response em {
+    font-style: italic;
+    color: #666;
+}
+
+.leetcoach-error {
+    background: #fee;
+    color: #c33;
+    padding: 15px;
+    border-radius: 6px;
+    border-left: 4px solid #e74c3c;
+}
+
+/* Loading State */
+.leetcoach-loading {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.95);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    z-index: 10;
+}
+
+.leetcoach-spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #667eea;
+    border-radius: 50%;
+    animation: leetcoach-spin 1s linear infinite;
+}
+
+@keyframes leetcoach-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Scrollbar Styling */
+.leetcoach-content-area::-webkit-scrollbar,
+.leetcoach-tab-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.leetcoach-content-area::-webkit-scrollbar-track,
+.leetcoach-tab-content::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.leetcoach-content-area::-webkit-scrollbar-thumb,
+.leetcoach-tab-content::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+.leetcoach-content-area::-webkit-scrollbar-thumb:hover,
+.leetcoach-tab-content::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* Responsive Design */
+@media (max-width: 480px) {
+    .leetcoach-panel {
+        width: 95vw;
+        right: 2.5vw;
+        left: 2.5vw;
+    }
+    
+    .leetcoach-tabs {
+        font-size: 12px;
+    }
+    
+    .leetcoach-tab {
+        padding: 10px 12px;
+    }
+    
+    .leetcoach-checkbox-group {
+        flex-direction: column;
+        gap: 8px;
+    }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+    .leetcoach-panel {
+        background: #2d3748;
+        border-color: #4a5568;
+        color: #e2e8f0;
+    }
+    
+    .leetcoach-tabs {
+        background: #1a202c;
+        border-bottom-color: #4a5568;
+    }
+    
+    .leetcoach-tab {
+        color: #a0aec0;
+    }
+    
+    .leetcoach-tab:hover {
+        background: #2d3748;
+        color: #e2e8f0;
+    }
+    
+    .leetcoach-tab.active {
+        background: #2d3748;
+        color: #667eea;
+    }
+    
+    .leetcoach-content-area {
+        background: #1a202c;
+        color: #e2e8f0;
+    }
+    
+    .leetcoach-placeholder {
+        color: #718096;
+    }
+    
+    .leetcoach-response code {
+        background: #2d3748;
+        color: #e2e8f0;
+    }
+    
+    .leetcoach-response pre {
+        background: #1a202c;
+        border-color: #4a5568;
+    }
+}
+
+/* Animation for panel appearance */
+@keyframes leetcoach-fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.leetcoach-panel {
+    animation: leetcoach-fadeIn 0.3s ease-out;
+}
+
+/* Ensure panel stays on top of all LeetCode elements */
+.leetcoach-panel {
+    position: fixed !important;
+    z-index: 2147483647 !important;
+}

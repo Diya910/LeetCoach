@@ -1,0 +1,6 @@
+# Essential dependencies only
+fastapi
+uvicorn
+python-dotenv
+openai
+httpx

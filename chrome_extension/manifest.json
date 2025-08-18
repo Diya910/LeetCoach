@@ -1,0 +1,63 @@
+{
+  "manifest_version": 3,
+  "name": "LeetCoach - AI Coding Assistant",
+  "version": "1.0.0",
+  "description": "AI-powered coding assistant that integrates with LeetCode to provide hints, optimization suggestions, and interview preparation.",
+  
+  "permissions": [
+    "activeTab",
+    "storage",
+    "scripting"
+  ],
+  
+  "host_permissions": [
+    "https://leetcode.com/*",
+    "http://localhost:8000/*",
+    "http://127.0.0.1:8000/*"
+  ],
+  
+  "background": {
+    "service_worker": "background.js"
+  },
+  
+  "content_scripts": [
+    {
+      "matches": [
+        "https://leetcode.com/problems/*",
+        "https://leetcode.com/contest/*/problems/*"
+      ],
+      "js": ["content.js"],
+      "css": ["styles.css"],
+      "run_at": "document_end"
+    }
+  ],
+  
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "LeetCoach Assistant",
+    "default_icon": {
+      "16": "icons/camera.png",
+      "32": "icons/camera.png",
+      "48": "icons/camera.png",
+      "128": "icons/camera.png"
+    }
+  },
+  
+  "icons": {
+  "16": "icons/camera.png",
+  "32": "icons/camera.png",
+  "48": "icons/camera.png",
+  "128": "icons/camera.png"
+  },
+  
+  "web_accessible_resources": [
+    {
+      "resources": ["leetcoach-panel.html", "styles.css"],
+      "matches": ["https://leetcode.com/*"]
+    }
+  ],
+  
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; connect-src 'self' http://localhost:8000 http://127.0.0.1:8000 https://api.openai.com https://bedrock.*.amazonaws.com;"
+  }
+}
