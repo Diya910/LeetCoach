@@ -57,7 +57,7 @@ class PineconeClient:
                 # Create index if it doesn't exist
                 self.pc.create_index(
                     name=self.index_name,
-                    dimension=1536,  # OpenAI embedding dimension
+                    dimension=1024,  # Match existing index dimension
                     metric='cosine',
                     spec=ServerlessSpec(
                         cloud='aws',
@@ -408,17 +408,20 @@ class PineconeClient:
             except (BotoCoreError, ClientError, Exception):
                 pass
 
-        # Fallback to OpenAI if configured
-        try:
-            from openai import AsyncOpenAI
-            client = AsyncOpenAI(api_key=settings.openai_api_key)
-            response = await client.embeddings.create(
-                model="text-embedding-ada-002",
-                input=text
-            )
-            return response.data[0].embedding
-        except Exception:
-            # Final fallback: deterministic random vector matching 1536 dims
-            import random
-            random.seed(hash(str(data)))
-            return [random.uniform(-1, 1) for _ in range(1536)]
+        # Only use OpenAI embeddings if OpenAI is the chosen default provider
+        if settings.default_llm_provider == LLMProvider.OPENAI:
+            try:
+                from openai import AsyncOpenAI
+                client = AsyncOpenAI(api_key=settings.openai_api_key)
+                response = await client.embeddings.create(
+                    model="text-embedding-ada-002",
+                    input=text
+                )
+                return response.data[0].embedding
+            except Exception:
+                pass
+
+        # Final fallback: deterministic pseudo-random vector with 1024 dims
+        import random
+        random.seed(hash(str(data)))
+        return [random.uniform(-1, 1) for _ in range(1024)]

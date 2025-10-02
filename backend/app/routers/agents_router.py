@@ -17,8 +17,8 @@ from ..models.request_models import (
 
 router = APIRouter(prefix="/api", tags=["agents"])
 
-# Global dynamic orchestrator instance (force Bedrock by default)
-orchestrator = DynamicAgentOrchestrator(default_provider=LLMProvider.BEDROCK)
+# Global dynamic orchestrator instance (auto-select best available provider)
+orchestrator = DynamicAgentOrchestrator()
 
 # Global Pinecone client (optional, only if configured)
 pinecone_client = None
@@ -552,7 +552,7 @@ async def get_user_history_post(
 
 @router.get("/health")
 async def health_check():
-    """Comprehensive health check."""
+    """Comprehensive health check (always 200, status in body)."""
     try:
         # Check orchestrator
         orchestrator_health = await orchestrator.health_check()
@@ -560,34 +560,36 @@ async def health_check():
         # Check vector database
         vector_db_health = {"status": "not_configured"}
         if pinecone_client:
-            vector_db_health = await pinecone_client.health_check()
+            try:
+                vector_db_health = await pinecone_client.health_check()
+            except Exception as ve:
+                vector_db_health = {"status": "unhealthy", "error": str(ve)}
         
         # Overall status
         overall_status = "healthy"
         if (orchestrator_health.get("llm_client") != "healthy" or 
-            vector_db_health.get("status") == "unhealthy"):
+            vector_db_health.get("status") in ("unhealthy", "error")):
             overall_status = "degraded"
         
-        return HealthCheckResponse(
-            status=overall_status,
-            timestamp=str(orchestrator_health.get("timestamp", "")),
-            version="1.0.0",
-            llm_provider=orchestrator_health.get("llm_provider", "unknown"),
-            vector_db_status=vector_db_health.get("status", "unknown")
-        )
+        return {
+            "status": overall_status,
+            "timestamp": str(orchestrator_health.get("timestamp", "")),
+            "version": "1.0.0",
+            "llm_provider": orchestrator_health.get("llm_provider", "unknown"),
+            "vector_db_status": vector_db_health.get("status", "unknown"),
+            "vector_db_error": vector_db_health.get("error")
+        }
         
     except Exception as e:
-        return JSONResponse(
-            status_code=503,
-            content={
-                "status": "unhealthy",
-                "error": str(e),
-                "timestamp": "",
-                "version": "1.0.0",
-                "llm_provider": "unknown",
-                "vector_db_status": "unknown"
-            }
-        )
+        # Still return 200 with unhealthy status to keep the extension working
+        return {
+            "status": "unhealthy",
+            "error": str(e),
+            "timestamp": "",
+            "version": "1.0.0",
+            "llm_provider": "unknown",
+            "vector_db_status": "unknown"
+        }
 
 
 @router.get("/providers")

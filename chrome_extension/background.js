@@ -96,7 +96,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       return true;
       
     case 'GET_PROBLEM_DATA':
-      handleGetProblemData(sender.tab.id, sendResponse);
+      if (sender && sender.tab && typeof sender.tab.id === 'number') {
+        handleGetProblemData(sender.tab.id, sendResponse);
+      } else {
+        console.warn('GET_PROBLEM_DATA called without a tab context');
+        sendResponse({ success: false, error: 'No active tab context' });
+      }
       return true;
       
     case 'CACHE_SET':
@@ -113,6 +118,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
     case 'GET_USER_HISTORY':
       handleGetUserHistory(sendResponse);
+      return true;
+      
+    case 'ANALYZE_SCREEN':
+      handleAnalyzeScreen(message.data, sendResponse);
+      return true;
+      
+    case 'ANALYZE_ASSISTANCE_NEED':
+      handleAnalyzeAssistanceNeed(message.data, sendResponse);
       return true;
       
     default:
@@ -156,8 +169,9 @@ async function checkApiHealth() {
       extensionState.apiHealth = 'healthy';
       console.log('API health check passed');
     } else {
-      extensionState.apiHealth = 'unhealthy';
-      console.warn('API health check failed:', response.status);
+      // Treat non-200 as degraded rather than failure so extension UI keeps working
+      extensionState.apiHealth = 'degraded';
+      console.warn('API health check degraded:', response.status);
     }
   } catch (error) {
     extensionState.apiHealth = 'unreachable';
@@ -217,12 +231,29 @@ async function handleApiRequest(endpoint, data, sendResponse, method = 'POST') {
 
     const response = await fetch(finalUrl, fetchOptions);
     
-    const result = await response.json();
+    let result;
+    try {
+      result = await response.json();
+    } catch (e) {
+      // If response is not JSON, create a simple error object
+      result = { error: `HTTP ${response.status}: ${response.statusText}` };
+    }
     
     if (response.ok) {
       sendResponse({ success: true, data: result });
     } else {
-      sendResponse({ success: false, error: result.error || 'API request failed' });
+      // Enhanced error handling
+      let errorMessage = 'API request failed';
+      if (response.status === 401) {
+        errorMessage = 'Authentication failed. Please check your API keys in the .env file.';
+      } else if (response.status === 500) {
+        errorMessage = 'Server error. Please check if the backend is running and configured properly.';
+      } else if (result && result.error) {
+        errorMessage = result.error;
+      } else {
+        errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+      }
+      sendResponse({ success: false, error: errorMessage });
     }
   } catch (error) {
     console.error('API request failed:', error);
@@ -232,16 +263,9 @@ async function handleApiRequest(endpoint, data, sendResponse, method = 'POST') {
 
 async function handleGetUserHistory(sendResponse) {
   try {
-    const preferences = await getPreferences();
-    const userId = preferences.userId || 'anonymous';
-    const url = `${preferences.apiEndpoint || CONFIG.API_BASE_URL}/user/${userId}/history?limit=100`;
-    const response = await fetch(url);
-    if (!response.ok) {
-      sendResponse({ history: [] });
-      return;
-    }
-    const history = await response.json();
-    sendResponse({ history });
+    // Avoid hitting vector DB endpoints when they may be unavailable; return empty history.
+    // This keeps the extension responsive even if Pinecone is not configured.
+    sendResponse({ history: [] });
   } catch (e) {
     console.error('Failed to fetch user history:', e);
     sendResponse({ history: [] });
@@ -318,6 +342,58 @@ async function handleHealthCheck(sendResponse) {
       version: chrome.runtime.getManifest().version
     }
   });
+}
+
+async function handleAnalyzeScreen(data, sendResponse) {
+  try {
+    const preferences = await getPreferences();
+    const url = `${preferences.apiEndpoint || CONFIG.API_BASE_URL}/screen/analyze`;
+    
+    const formData = new FormData();
+    formData.append('image_data', data.imageData);
+    formData.append('url', data.url);
+    formData.append('timestamp', data.timestamp.toString());
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      body: formData
+    });
+    
+    const result = await response.json();
+    
+    if (response.ok) {
+      sendResponse({ success: true, data: result });
+    } else {
+      sendResponse({ success: false, error: result.error || 'Screen analysis failed' });
+    }
+  } catch (error) {
+    console.error('Screen analysis failed:', error);
+    sendResponse({ success: false, error: error.message });
+  }
+}
+
+async function handleAnalyzeAssistanceNeed(data, sendResponse) {
+  try {
+    const preferences = await getPreferences();
+    const url = `${preferences.apiEndpoint || CONFIG.API_BASE_URL}/screen/assistance-need`;
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    
+    const result = await response.json();
+    
+    if (response.ok) {
+      sendResponse({ success: true, data: result });
+    } else {
+      sendResponse({ success: false, error: result.error || 'Assistance analysis failed' });
+    }
+  } catch (error) {
+    console.error('Assistance analysis failed:', error);
+    sendResponse({ success: false, error: error.message });
+  }
 }
 
 /**

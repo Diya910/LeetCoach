@@ -30,6 +30,7 @@ class LLMProvider(str, Enum):
     """Supported LLM providers."""
     OPENAI = "openai"
     BEDROCK = "bedrock"
+    GEMINI = "gemini"
 
 
 class LogLevel(str, Enum):
@@ -55,13 +56,17 @@ class Settings(BaseSettings):
     aws_secret_access_key: Optional[str] = Field(None, env="AWS_SECRET_ACCESS_KEY")
     aws_region: str = Field("us-east-1", env="AWS_REGION")
     bedrock_model_id: str = Field(
-        "anthropic.claude-3-sonnet-20240229-v1:0", 
+        "arn:aws:bedrock:us-east-1:688427729924:inference-profile/us.meta.llama3-3-70b-instruct-v1:0",
         env="BEDROCK_MODEL_ID"
     )
     bedrock_embedding_model_id: str = Field(
         "amazon.titan-embed-text-v1",
         env="BEDROCK_EMBEDDING_MODEL_ID"
     )
+    
+    # Google Gemini Configuration
+    gemini_api_key: Optional[str] = Field(None, env="GEMINI_API_KEY")
+    gemini_model: str = Field("gemini-1.5-pro", env="GEMINI_MODEL")
     
     # Pinecone Configuration
     pinecone_api_key: Optional[str] = Field(None, env="PINECONE_API_KEY")
@@ -94,7 +99,20 @@ class Settings(BaseSettings):
                 self.aws_access_key_id,
                 self.aws_secret_access_key
             ])
+        elif self.default_llm_provider == LLMProvider.GEMINI:
+            return self.gemini_api_key is not None
         return False
+    
+    def get_available_providers(self) -> List[LLMProvider]:
+        """Get list of available LLM providers based on configuration."""
+        available = []
+        if self.openai_api_key:
+            available.append(LLMProvider.OPENAI)
+        if self.aws_access_key_id and self.aws_secret_access_key:
+            available.append(LLMProvider.BEDROCK)
+        if self.gemini_api_key:
+            available.append(LLMProvider.GEMINI)
+        return available
     
     def validate_vector_db_config(self) -> bool:
         """Validate that the required vector database configuration is present."""

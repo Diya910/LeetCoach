@@ -7,7 +7,10 @@
   "permissions": [
     "activeTab",
     "storage",
-    "scripting"
+    "scripting",
+    "tabs",
+    "desktopCapture",
+    "notifications"
   ],
   
   "host_permissions": [
@@ -26,7 +29,7 @@
         "https://leetcode.com/problems/*",
         "https://leetcode.com/contest/*/problems/*"
       ],
-      "js": ["content.js"],
+      "js": ["content.js", "screen-monitor.js", "chat-interface.js"],
       "css": ["styles.css"],
       "run_at": "document_end"
     }
@@ -52,12 +55,12 @@
   
   "web_accessible_resources": [
     {
-      "resources": ["leetcoach-panel.html", "styles.css"],
+      "resources": ["leetcoach-panel.html", "styles.css", "screen-monitor.js", "chat-interface.js"],
       "matches": ["https://leetcode.com/*"]
     }
   ],
   
   "content_security_policy": {
-    "extension_pages": "script-src 'self'; object-src 'self'; connect-src 'self' http://localhost:8000 http://127.0.0.1:8000 https://api.openai.com https://bedrock.*.amazonaws.com;"
+    "extension_pages": "script-src 'self'; object-src 'self'; connect-src 'self' http://localhost:8000 http://127.0.0.1:8000 https://api.openai.com https://*.amazonaws.com https://generativelanguage.googleapis.com;"
   }
 }

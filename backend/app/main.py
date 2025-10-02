@@ -13,7 +13,7 @@ from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from .config import settings
-from .routers import agents_router
+from .routers import agents_router, screen_router
 
 # Configure logging
 logging.basicConfig(
@@ -138,6 +138,7 @@ async def log_requests(request: Request, call_next):
 
 # Include routers
 app.include_router(agents_router)
+app.include_router(screen_router)
 
 
 # Root endpoint

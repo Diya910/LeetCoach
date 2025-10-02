@@ -11,7 +11,7 @@ from ..providers import OpenAIClient, BedrockClient
 
 
 class BaseDynamicAgent(ABC):
-    """Base class for all dynamic agents with intelligent prompting."""
+    """Base class for all dynamic agents."""
     
     def __init__(self, agent_type: AgentType):
         """Initialize the base dynamic agent."""

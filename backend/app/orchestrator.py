@@ -10,7 +10,7 @@ from typing import Dict, Any, Optional, Union, List
 from enum import Enum
 
 from .config import settings, LLMProvider
-from .providers import OpenAIClient, BedrockClient
+from .providers import OpenAIClient, BedrockClient, GeminiClient
 from .models.request_models import (
     AgentType, UserRequest, AgentResponse
 )
@@ -130,7 +130,7 @@ class LLMProviderFactory:
     """Factory for creating LLM provider clients."""
     
     @staticmethod
-    def create_client(provider: LLMProvider) -> Union[OpenAIClient, BedrockClient]:
+    def create_client(provider: LLMProvider) -> Union[OpenAIClient, BedrockClient, GeminiClient]:
         """Create an LLM client based on the provider type."""
         if provider == LLMProvider.OPENAI:
             if not settings.openai_api_key:
@@ -142,8 +142,33 @@ class LLMProviderFactory:
                 raise ValueError("AWS credentials are required but not configured")
             return BedrockClient()
         
+        elif provider == LLMProvider.GEMINI:
+            if not settings.gemini_api_key:
+                raise ValueError("Gemini API key is required but not configured")
+            return GeminiClient()
+        
         else:
             raise ValueError(f"Unsupported LLM provider: {provider}")
+    
+    @staticmethod
+    def get_available_providers() -> List[LLMProvider]:
+        """Get list of available providers based on configuration."""
+        return settings.get_available_providers()
+    
+    @staticmethod
+    def get_best_available_provider() -> Optional[LLMProvider]:
+        """Get the best available provider, preferring the default if available."""
+        available = LLMProviderFactory.get_available_providers()
+        
+        if not available:
+            return None
+        
+        # Prefer the default provider if available
+        if settings.default_llm_provider in available:
+            return settings.default_llm_provider
+        
+        # Fallback to first available
+        return available[0]
 
 
 class DynamicAgentOrchestrator:
@@ -154,18 +179,25 @@ class DynamicAgentOrchestrator:
     
     def __init__(self, default_provider: Optional[LLMProvider] = None):
         """Initialize the dynamic orchestrator."""
-        self.default_provider = default_provider or settings.default_llm_provider
+        self.default_provider = default_provider or self._get_best_provider()
         self.llm_client = None
         self.context_analyzer = ContextAnalyzer()
         self._initialize_llm_client()
-        
-        # Import agents dynamically to avoid circular imports
+        self._initialize_agents()
+    
+    def _get_best_provider(self) -> LLMProvider:
+        """Get the best available provider."""
+        best_provider = LLMProviderFactory.get_best_available_provider()
+        if best_provider is None:
+            raise RuntimeError("No LLM providers are configured. Please set up at least one API key.")
+        return best_provider
+
+    def _initialize_agents(self) -> None:
+        """Import and initialize dynamic agents (avoid circular imports at module load)."""
         from .agents import (
             DynamicHintAgent, DynamicOptimizeAgent, DynamicComplexityAgent,
             DynamicCounterAgent, DynamicDeepQAgent, DynamicSolutionAgent
         )
-        
-        # Initialize dynamic agents
         self.agents = {
             AgentType.HINT: DynamicHintAgent(),
             AgentType.OPTIMIZE: DynamicOptimizeAgent(),

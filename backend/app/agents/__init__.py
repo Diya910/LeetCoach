@@ -1,7 +1,3 @@
-"""
-Dynamic agents for LeetCoach application.
-"""
-
 # Dynamic agents with context-aware prompting
 from .dynamic_hint_agent import DynamicHintAgent
 from .dynamic_optimize_agent import DynamicOptimizeAgent

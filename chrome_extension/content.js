@@ -125,22 +125,28 @@
       const examples = [];
       
       try {
-        // Look for example sections
-        const exampleElements = document.querySelectorAll('strong:contains("Example")') ||
-                              document.querySelectorAll('p:contains("Example")');
-        
-        exampleElements.forEach((element, index) => {
-          const exampleText = element.parentElement?.textContent || '';
-          const inputMatch = exampleText.match(/Input:\s*(.+)/);
-          const outputMatch = exampleText.match(/Output:\s*(.+)/);
-          const explanationMatch = exampleText.match(/Explanation:\s*(.+)/);
-          
-          if (inputMatch && outputMatch) {
-            examples.push({
-              input: inputMatch[1].trim(),
-              output: outputMatch[1].trim(),
-              explanation: explanationMatch ? explanationMatch[1].trim() : ''
-            });
+        // LeetCode doesn't support :contains; use text scanning instead
+        const descEl = document.querySelector('[data-track-load="description_content"], .question-content');
+        const rawText = (descEl?.textContent || '').replace(/\r/g, '');
+        const lines = rawText.split('\n');
+        let currentBlock = [];
+        lines.forEach((line) => {
+          const t = line.trim();
+          if (!t) return;
+          currentBlock.push(t);
+          if (/^Example\s*\d*:?/i.test(t) || /^(Input|Output|Explanation):/i.test(t)) {
+            const joined = currentBlock.join(' ');
+            const inputMatch = joined.match(/Input:\s*([^]*?)\s*(Output:|Explanation:|$)/i);
+            const outputMatch = joined.match(/Output:\s*([^]*?)\s*(Explanation:|$)/i);
+            const explanationMatch = joined.match(/Explanation:\s*([^]*?)$/i);
+            if (inputMatch && outputMatch) {
+              examples.push({
+                input: (inputMatch[1] || '').trim(),
+                output: (outputMatch[1] || '').trim(),
+                explanation: explanationMatch ? (explanationMatch[1] || '').trim() : ''
+              });
+              currentBlock = [];
+            }
           }
         });
       } catch (error) {
@@ -157,21 +163,26 @@
       const constraints = [];
       
       try {
-        // Look for constraints section
-        const constraintsElement = document.querySelector('strong:contains("Constraints")') ||
-                                 document.querySelector('p:contains("Constraints")');
-        
-        if (constraintsElement) {
-          const constraintsText = constraintsElement.parentElement?.textContent || '';
-          const lines = constraintsText.split('\n');
-          
-          lines.forEach(line => {
-            const trimmed = line.trim();
-            if (trimmed && !trimmed.includes('Constraints') && trimmed.length > 3) {
-              constraints.push(trimmed);
+        const descEl = document.querySelector('[data-track-load="description_content"], .question-content');
+        const rawText = (descEl?.textContent || '').replace(/\r/g, '');
+        const lines = rawText.split('\n');
+        let inConstraints = false;
+        lines.forEach((line) => {
+          const t = line.trim();
+          if (!t) return;
+          if (/^Constraints:?$/i.test(t)) {
+            inConstraints = true;
+            return;
+          }
+          if (inConstraints) {
+            // Stop if another major section starts
+            if (/^(Example|Examples|Input|Output|Explanation)\b/i.test(t)) {
+              inConstraints = false;
+              return;
             }
-          });
-        }
+            constraints.push(t);
+          }
+        });
       } catch (error) {
         console.error('Failed to extract constraints:', error);
       }
@@ -616,10 +627,11 @@
 
         const response = await this.makeDynamicApiCall(userRequest, contextData);
         
-        if (response.success) {
+        if (response && response.success) {
           this.displayContent('leetcoach-hints', response.data);
         } else {
-          this.displayContent('leetcoach-hints', response.error, true);
+          const errorMsg = response?.error || 'Failed to get hint. Please check if the backend is running and your API keys are configured.';
+          this.displayContent('leetcoach-hints', errorMsg, true);
         }
       } catch (error) {
         this.displayContent('leetcoach-hints', error.message, true);
@@ -922,5 +934,98 @@
   // Initialize content script
   window.leetCoachContentScript = new LeetCoachContentScript();
 
+  // Initialize integrated features (modules are now loaded as content scripts)
+  initializeIntegratedFeatures();
+
   console.log('LeetCoach content script loaded');
 })();
+
+// Styles are included via manifest content_scripts
+
+// Initialize integrated features
+function initializeIntegratedFeatures() {
+  // Wait for modules to load
+  setTimeout(() => {
+    // Integrate screen monitor with chat interface
+    if (window.leetcoachScreenMonitor && window.leetcoachChat) {
+      // Connect screen monitor to chat interface
+      window.leetcoachScreenMonitor.onAssistanceNeeded = (triggerType, context) => {
+        // Show chat interface
+        window.leetcoachChat.show();
+        
+        // Switch to appropriate tab based on trigger
+        if (triggerType === 'stuck_detection') {
+          window.leetcoachChat.switchTab('hints');
+        } else if (triggerType === 'problem_analysis') {
+          window.leetcoachChat.switchTab('assistant');
+        }
+        
+        // Show assistance notification
+        window.leetcoachChat.showNotification(
+          'I noticed you might need help! Click to get assistance.',
+          'info'
+        );
+      };
+      
+      // Connect chat interface to screen monitor
+      window.leetcoachChat.updateScreenMonitorPreferences = (preferences) => {
+        window.leetcoachScreenMonitor.updatePreferences(preferences);
+      };
+    }
+    
+    // Add floating chat button
+    addFloatingChatButton();
+    
+    // Initialize assistance timer
+    initializeAssistanceTimer();
+    
+  }, 1000);
+}
+
+// Add floating chat button
+function addFloatingChatButton() {
+  const chatButton = document.createElement('div');
+  chatButton.id = 'leetcoach-floating-button';
+  chatButton.innerHTML = '🧠';
+  chatButton.style.cssText = `
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    cursor: pointer;
+    z-index: 9999;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    transition: all 0.3s ease;
+    user-select: none;
+  `;
+  
+  chatButton.addEventListener('click', () => {
+    if (window.leetcoachChat) {
+      window.leetcoachChat.show();
+    }
+  });
+  
+  chatButton.addEventListener('mouseenter', () => {
+    chatButton.style.transform = 'scale(1.1)';
+  });
+  
+  chatButton.addEventListener('mouseleave', () => {
+    chatButton.style.transform = 'scale(1)';
+  });
+  
+  document.body.appendChild(chatButton);
+}
+
+// Initialize assistance timer
+function initializeAssistanceTimer() {
+  // This will be handled by the screen monitor
+  console.log('Assistance timer initialized');
+}
