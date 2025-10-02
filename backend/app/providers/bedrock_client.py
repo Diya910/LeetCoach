@@ -85,8 +85,20 @@ class BedrockClient:
                     "top_p": kwargs.get("top_p", 0.9),
                     "stop_sequences": kwargs.get("stop_sequences", ["\n\nHuman:"])
                 }
+            elif "llama" in self.model_id.lower():
+                # Llama models use a specific format
+                formatted_prompt = prompt
+                if system_prompt:
+                    formatted_prompt = f"{system_prompt}\n\n{prompt}"
+                
+                body = {
+                    "prompt": formatted_prompt,
+                    "max_gen_len": max_tokens or self.max_tokens,
+                    "temperature": temperature or self.temperature,
+                    "top_p": kwargs.get("top_p", 0.9)
+                }
             else:
-                # Generic format for other models
+                # Generic format for other models (Titan, etc.)
                 body = {
                     "inputText": prompt,
                     "textGenerationConfig": {
@@ -115,8 +127,13 @@ class BedrockClient:
                 completion = response_body.get("completion", "")
                 input_tokens = response_body.get("usage", {}).get("input_tokens", 0)
                 output_tokens = response_body.get("usage", {}).get("output_tokens", 0)
+            elif "llama" in self.model_id.lower():
+                # Llama models response format
+                completion = response_body.get("generation", "")
+                input_tokens = response_body.get("prompt_token_count", 0)
+                output_tokens = response_body.get("generation_token_count", 0)
             else:
-                # Generic parsing for other models
+                # Generic parsing for other models (Titan, etc.)
                 completion = response_body.get("results", [{}])[0].get("outputText", "")
                 input_tokens = response_body.get("inputTextTokenCount", 0)
                 output_tokens = response_body.get("results", [{}])[0].get("tokenCount", 0)
@@ -138,9 +155,10 @@ class BedrockClient:
             
         except ClientError as e:
             error_code = e.response.get('Error', {}).get('Code', 'Unknown')
+            error_message = e.response.get('Error', {}).get('Message', str(e))
             return {
                 "success": False,
-                "error": f"AWS Bedrock error: {error_code}",
+                "error": f"AWS Bedrock error: {error_code} - {error_message}",
                 "error_type": "bedrock_error",
                 "details": str(e),
                 "processing_time_ms": int((time.time() - start_time) * 1000)
